@@ -33,4 +33,13 @@ public interface TenantSpaceHelper {
 
     @PostMapping("/tenant/create-project-spaces")
     ProjectSpacesDto createProjectSpaces(@RequestBody ProjectSpacesRequestDto rq);
+
+    @PostMapping("/tenant/create-knowledge-base-spaces")
+    KBSpacesDto createKnowledgeBaseSpaces(@RequestBody KBSpacesRequestDto rq);
+
+    @PostMapping("/tenant/delete-knowledge-base-spaces")
+    DeleteKBSpacesDto deleteKnowledgeBaseSpaces(@RequestBody KBSpacesRequestDto rq);
+
+    @PostMapping("/tenant/delete-project-spaces")
+    ProjectSpacesDto deleteProjectSpaces(@RequestBody ProjectSpacesRequestDto rq);
 }

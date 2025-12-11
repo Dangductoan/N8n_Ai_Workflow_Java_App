@@ -46,4 +46,17 @@ public class TenantSpaceController {
     ProjectSpacesDto createProjectSpaces(@RequestBody ProjectSpacesRequestDto rq) {
         return this.tenantSpaceService.createProjectSpaces(rq);
     }
+
+    @PostMapping("/tenant/create-knowledge-base-spaces")
+    KBSpacesDto createKnowledgeBaseSpaces(@RequestBody KBSpacesRequestDto rq) {
+        return this.tenantSpaceService.createKnowledgeBaseSpaces(rq);
+    }
+    @PostMapping("/tenant/delete-knowledge-base-spaces")
+    DeleteKBSpacesDto deleteKnowledgeBaseSpaces(@RequestBody KBSpacesRequestDto rq) {
+        return this.tenantSpaceService.deleteKnowledgeBaseSpaces(rq);
+    }
+    @PostMapping("/tenant/delete-project-spaces")
+    ProjectSpacesDto deleteProjectSpaces(@RequestBody ProjectSpacesRequestDto rq) {
+        return this.tenantSpaceService.deleteProjectSpaces(rq);
+    }
 }

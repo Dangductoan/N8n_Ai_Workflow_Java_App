@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import ntt.common.api.datastore.minio.MinioClient;
 import ntt.common.api.datastore.qdrant.QdrantClient;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -293,5 +294,174 @@ public class TenantSpaceService {
        }
 
 
+    }
+    /*
+     * Function: createKnowledgeBaseSpaces
+     * @param: KBSpacesRequestDto rq
+     * @return:  KBSpacesDto
+     */
+    public KBSpacesDto createKnowledgeBaseSpaces(KBSpacesRequestDto rq) {
+        try {
+            // Debug logging for project_id
+            log.info("createKnowledgeBaseSpaces called with projectId: {}, userId: {}", rq.getProjectId(), rq.getUserId());
+            log.info("projectId type: {}, value: {}",
+                    rq.getProjectId() != null ? rq.getProjectId().getClass().getSimpleName() : "null", rq.getProjectId());
+
+            String sanitizedKbName = sanitizeName(rq.getKbName());
+
+            // Get company bucket name using actual company name
+            String companyName = rq.getCompanyName();
+            if (companyName == null) {
+                companyName = "company";
+            }
+            CompanySpaceDto  companyInfo =  getCompanySpaceInfo(rq.getCompanyUUID(), companyName);
+            String companyBucket = companyInfo.getMinioBucketName();
+
+            List<String> kbFolders = new ArrayList<>();
+
+            // Create KB-specific folders using KB ID
+            if (rq.getProjectId() != null && rq.getProjectId() > 0) {
+                // If Project KB: create in project folder
+                log.info("Creating Project KB folders for KB {} in project {}", rq.getKbId(), rq.getProjectId());
+
+                String basePath = String.format("projects/%d/knowledge-bases/kb_%d",  rq.getProjectId(), rq.getKbId());
+                kbFolders.add(basePath + "/");
+                kbFolders.add(basePath + "/documents/");
+                kbFolders.add(basePath + "/temp/");
+                kbFolders.add(basePath + "/processed/");
+                kbFolders.add(basePath + "/chunks/");
+                kbFolders.add(basePath + "/exports/");
+
+                // Add user_{id} subdirectory in documents if userId exists
+                if (rq.getUserId() != null) {
+                    kbFolders.add(String.format("%s/documents/user_%d/", basePath, rq.getUserId()));
+                    log.info("Added user_{} subdirectory for Project KB", rq.getUserId());
+                }
+
+                log.info("Project KB folders to create: {}", kbFolders);
+            } else {
+                // If User KB: create in root knowledge-bases folder
+                log.info("Creating User KB folders for KB {} (no projectId or invalid projectId)", rq.getKbId());
+
+                String basePath = String.format("knowledge-bases/kb_%d", rq.getKbId());
+                kbFolders.add(basePath + "/");
+                kbFolders.add(basePath + "/documents/");
+                kbFolders.add(basePath + "/temp/");
+                kbFolders.add(basePath + "/processed/");
+                kbFolders.add(basePath + "/chunks/");
+                kbFolders.add(basePath + "/exports/");
+
+                // Add user_{id} subdirectory in documents if userId exists
+                if (rq.getUserId() != null) {
+                    kbFolders.add(String.format("%s/documents/user_%d/", basePath, rq.getUserId()));
+                    log.info("Added user_{} subdirectory for User KB", rq.getUserId());
+                }
+
+
+                log.info("User KB folders to create: {}", kbFolders);
+            }
+            //convert to String[]
+            String[] kbFoldersList = kbFolders.toArray(new String[0]);
+            //put object to bucket
+            this.minioClient.putObject(companyBucket,kbFoldersList);
+
+            //Use company's Qdrant collection instead of creating separate one
+
+            String qdrantCollectionName = companyInfo.getQdrantCollectionName();
+
+            return new KBSpacesDto(companyBucket,qdrantCollectionName,
+                    rq.getKbId(),rq.getKbName(),rq.getProjectId(),rq.getUserId());
+
+
+        } catch (Exception e) {
+            log.error("Failed to create KB spaces for {} (ID: {}): {}", rq.getKbName(), rq.getKbId(), e.getMessage());
+            throw new RuntimeException("Failed to create KB spaces", e);
+        }
+    }
+
+    /*
+     * Function: deleteKnowledgeBaseSpaces
+     * @param: KBSpacesRequestDto rq
+     * @return:  DeleteKBSpacesDto
+     */
+    public DeleteKBSpacesDto deleteKnowledgeBaseSpaces(KBSpacesRequestDto rq) {
+        try {
+            //String sanitizedKbName = sanitizeName(rq.getKbName());
+            String companyName = rq.getCompanyName();
+            // Get company bucket name using actual company name
+            if (companyName == null) {
+                // Fallback to "company" if name not provided
+                companyName = "company";
+            }
+
+            CompanySpaceDto companyInfo = getCompanySpaceInfo(rq.getCompanyUUID(),companyName);
+            String companyBucket = companyInfo.getMinioBucketName();
+
+            // Delete KB-specific folders using KB ID
+            String kbPrefix;
+            if (rq.getProjectId() != null && rq.getProjectId() > 0) {
+                // Project KB: xóa trong project folder
+                kbPrefix = String.format("projects/%d/knowledge-bases/kb_%d/", rq.getProjectId(), rq.getKbId());
+                log.info("Deleting Project KB folder: {}/{}", companyBucket, kbPrefix);
+            } else {
+                // User KB: xóa trong company root
+                kbPrefix = String.format("knowledge-bases/kb_%d/", rq.getKbId());
+                log.info("Deleting User KB folder: {}/{}", companyBucket, kbPrefix);
+            }
+            // List and delete all objects in the KB folder
+            UserSpacesInfoDto userSpacesDto = this.minioClient.deleteObjectsInBucketByPrefix(companyBucket, kbPrefix);
+
+            // Use company's Qdrant collection instead of creating separate one
+            String qdrantCollectionName = companyInfo.getQdrantCollectionName();
+            DeleteKBSpacesDto deletedSpaces =
+                    new DeleteKBSpacesDto(companyBucket, qdrantCollectionName,
+                            rq.getKbId(), rq.getKbName(), userSpacesDto.getDeletedUserObjectsCount());
+            log.info("Deleted KB spaces for {} (ID: {}): {}", rq.getKbName(), rq.getKbId(), deletedSpaces);
+            return deletedSpaces;
+
+        } catch (Exception e) {
+            log.error("Failed to delete KB spaces for {} (ID: {}): {}", rq.getKbName(), rq.getKbId(), e.getMessage());
+            throw new RuntimeException("Failed to delete KB spaces for " + rq.getKbName(), e);
+        }
+    }
+    /*
+     * Function: deleteProjectSpaces
+     * @param: ProjectSpacesRequestDto rq
+     * @return:  ProjectSpacesDto
+     */
+    public ProjectSpacesDto deleteProjectSpaces(ProjectSpacesRequestDto rq) {
+        try {
+            //String sanitizedProjectName = sanitizeName(rq.getProjectName());
+           String companyName = rq.getCompanyName();
+            // Get company bucket name using actual company name
+            if (companyName == null) {
+                // Fallback to "company" if name not provided
+                companyName = "company";
+            }
+
+            CompanySpaceDto companyInfo = getCompanySpaceInfo(rq.getCompanyUUID(), companyName);
+            String companyBucket = companyInfo.getMinioBucketName();
+
+            // Delete project-specific folders using project ID if available
+            String projectIdentifier = rq.getProjectId() != null ? String.valueOf(rq.getProjectId()) : rq.getProjectUUID();
+            String projectFolders = "projects/" + projectIdentifier + "/";
+
+            this.minioClient.deleteObjectsInBucketByPrefix(companyBucket,projectFolders);
+
+            // No need to delete Qdrant collection since we use company's collection
+            String qdrantCollectionName = companyInfo.getQdrantCollectionName();
+
+             ProjectSpacesDto projectSpaces =
+                     new ProjectSpacesDto(companyBucket,qdrantCollectionName,rq.getProjectUUID(),rq.getProjectId());
+
+
+            log.info("Deleted project spaces for {} (UUID: {}): {}", rq.getProjectName(), rq.getProjectUUID(), projectSpaces);
+            return projectSpaces;
+
+        } catch (Exception e) {
+            log.error("Failed to delete project spaces for {} (UUID: {}): {}", rq.getProjectName(), rq.getProjectUUID(), e.getMessage());
+            throw new RuntimeException(
+                    "Failed to delete project spaces for " + rq.getProjectName() + " (UUID: " + rq.getProjectUUID() + ")", e);
+        }
     }
 }
