@@ -1,0 +1,42 @@
+server:
+  port: 8088
+spring:
+  application:
+    name: storage
+  config:
+    import: "optional:consul:"
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      config:
+        enabled: true
+        prefixes: config
+        default-context: dev/settings
+
+storage:
+  minio:
+    access-key: minioadmin
+    secret-key: minioadmin
+    endpoint: http://localhost
+    port: 9000
+    users_bucket_name: users
+    documents_bucket_name: documents
+  n8n:
+    db-host: n8n-db
+    db-port: 5432
+    db-name: n8n
+    db-user: n8n
+    db-password: n8n_password
+    base-url: https://ntt-embot.ocg.local
+    jwt-secret: ntte-moi
+  redis:
+    host: localhost
+    port: 6379
+    database: 0
+    password:
+
+logging:
+  level:
+    org.springframework.boot.autoconfigure: INFO
+

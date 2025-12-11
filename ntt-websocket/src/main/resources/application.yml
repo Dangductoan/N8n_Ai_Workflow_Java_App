@@ -1,0 +1,10 @@
+server:
+  port: 8085
+spring:
+  application:
+    name: websocket-server
+  rabbitmq:
+    addresses: localhost
+    username: guest
+    password: guest
+    port: 61613
