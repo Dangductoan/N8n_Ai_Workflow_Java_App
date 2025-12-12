@@ -40,12 +40,12 @@ public interface MinioClient {
     public void putObject(@PathVariable(value="bucketName") String bucketName,@RequestBody String[] folders );
 
     //delete_objects_in_bucket_by_prefix
-    @DeleteMapping("api/minio/delete-object-in-bucket-by-prefix/{bucketName}/{prefix}")
+    @DeleteMapping("api/minio/delete-object-in-bucket-by-prefix/{bucketName}")
     UserSpacesInfoDto deleteObjectsInBucketByPrefix(@PathVariable(value="bucketName") String bucketName,
-                                                           @PathVariable(value="prefix") String prefix);
+                                                    @RequestParam(name="prefix") String prefix);
     //check bucket exist
-    @PostMapping("api/minio/check-bucket-exist/{uuid}")
-    String checkBucketExist(@PathVariable(value="uuid") String uuid);
+    @PostMapping("api/minio/find-bucket-name/{uuid}")
+    String findBucketNameByUuid(@PathVariable(value="uuid") String uuid);
 
 
 

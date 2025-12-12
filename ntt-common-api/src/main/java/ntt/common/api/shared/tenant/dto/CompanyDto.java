@@ -1,13 +1,13 @@
 package ntt.common.api.shared.tenant.dto;
 
 
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import ntt.common.api.shared.AbstractBaseModel;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class CompanyDto extends AbstractBaseModel {
     private Integer id;
     private String uuid;

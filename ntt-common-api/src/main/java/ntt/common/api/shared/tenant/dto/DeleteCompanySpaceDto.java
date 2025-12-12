@@ -2,12 +2,14 @@ package ntt.common.api.shared.tenant.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import ntt.common.api.shared.AbstractBaseModel;
 
-@Setter
 @Getter
+@Setter
 @AllArgsConstructor
+@NoArgsConstructor
 public class DeleteCompanySpaceDto extends AbstractBaseModel {
 
     private String minioBucketName;

@@ -147,7 +147,7 @@ public class TenantSpaceService {
 
           //Delete all user folders in company bucket
           try {
-               userSpacesInfoDto =  minioClient.deleteObjectsInBucketByPrefix(companyBucket,"users");
+               userSpacesInfoDto =  minioClient.deleteObjectsInBucketByPrefix(companyBucket,"users/");
               log.info("Deleted user spaces for company {}: {}",uuid, userSpacesInfoDto);
 ;          }catch (Exception e) {
               log.error("Failed to delete user spaces for company {}: {}",uuid,e.getMessage());
@@ -220,12 +220,14 @@ public class TenantSpaceService {
         try {
             //Lấy từ DB
             CompanyDto companyDto = companyService.getCompanyByUuid(uuid);
-            CompanySpaceDto companySpaceDto = this.getCompanySpaceInfo(uuid,companyDto.getName());
-             companyBucket = companySpaceDto.getMinioBucketName();
+            if (companyDto != null) {
+                CompanySpaceDto companySpaceDto = this.getCompanySpaceInfo(uuid,companyDto.getName());
+                companyBucket = companySpaceDto.getMinioBucketName();
+            }
 
              //Fallback nếu chưa có
             if (companyBucket == null || companyBucket.isEmpty()) {
-                companyBucket = this.minioClient.checkBucketExist(uuid);
+                companyBucket = this.minioClient.findBucketNameByUuid(uuid);
             }
 
             if (companyBucket == null || companyBucket.isEmpty()) {
@@ -256,8 +258,10 @@ public class TenantSpaceService {
      */
     public ProjectSpacesDto createProjectSpaces(ProjectSpacesRequestDto rq) {
        try {
-           //Get Company Info
-           String companyName = rq.getCompanyName() != null ? rq.getCompanyName() : "company";
+           String companyName = rq.getCompanyName();
+           if (companyName == null || companyName.isEmpty()) {
+               companyName = "company";
+           }
            CompanySpaceDto companyInfo =  this.getCompanySpaceInfo(rq.getCompanyUUID(),companyName);
            String companyBucket = companyInfo.getMinioBucketName();
 
@@ -307,11 +311,9 @@ public class TenantSpaceService {
             log.info("projectId type: {}, value: {}",
                     rq.getProjectId() != null ? rq.getProjectId().getClass().getSimpleName() : "null", rq.getProjectId());
 
-            String sanitizedKbName = sanitizeName(rq.getKbName());
-
             // Get company bucket name using actual company name
             String companyName = rq.getCompanyName();
-            if (companyName == null) {
+            if (companyName == null || companyName.isEmpty()) {
                 companyName = "company";
             }
             CompanySpaceDto  companyInfo =  getCompanySpaceInfo(rq.getCompanyUUID(), companyName);
@@ -386,11 +388,8 @@ public class TenantSpaceService {
      */
     public DeleteKBSpacesDto deleteKnowledgeBaseSpaces(KBSpacesRequestDto rq) {
         try {
-            //String sanitizedKbName = sanitizeName(rq.getKbName());
             String companyName = rq.getCompanyName();
-            // Get company bucket name using actual company name
-            if (companyName == null) {
-                // Fallback to "company" if name not provided
+            if (companyName == null || companyName.isEmpty()) {
                 companyName = "company";
             }
 
@@ -431,11 +430,8 @@ public class TenantSpaceService {
      */
     public ProjectSpacesDto deleteProjectSpaces(ProjectSpacesRequestDto rq) {
         try {
-            //String sanitizedProjectName = sanitizeName(rq.getProjectName());
-           String companyName = rq.getCompanyName();
-            // Get company bucket name using actual company name
-            if (companyName == null) {
-                // Fallback to "company" if name not provided
+            String companyName = rq.getCompanyName();
+            if (companyName == null || companyName.isEmpty()) {
                 companyName = "company";
             }
 

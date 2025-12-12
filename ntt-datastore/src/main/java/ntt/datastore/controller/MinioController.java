@@ -42,15 +42,15 @@ public class MinioController {
          this.minioService.putObject(bucketName,folders);
     }
 
-    @DeleteMapping("/delete-object-in-bucket-by-prefix/{bucketName}/{prefix}")
+    @DeleteMapping("/delete-object-in-bucket-by-prefix/{bucketName}")
     public UserSpacesInfoDto deleteObjectsInBucketByPrefix(@PathVariable(value="bucketName") String bucketName,
-                                                           @PathVariable(value="prefix") String prefix) {
+                                                           @RequestParam(name="prefix") String prefix) {
         return this.minioService.deleteObjectsInBucketByPrefix(bucketName,prefix);
     }
 
-    @PostMapping("api/minio/check-bucket-exist/{uuid}")
-    String checkBucketExist(@PathVariable(value="uuid") String uuid) {
-        return this.minioService.checkBucketExist(uuid);
+    @PostMapping("/find-bucket-name/{uuid}")
+    String findBucketNameByUuid(@PathVariable(value="uuid") String uuid) {
+        return this.minioService.findBucketNameByUuid(uuid);
     }
 
 

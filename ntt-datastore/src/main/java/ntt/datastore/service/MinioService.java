@@ -194,10 +194,6 @@ public class MinioService {
 
         UserSpacesInfoDto userSpacesInfoDto = new UserSpacesInfoDto();
         int count = 0;
-
-        if (!Objects.equals(prefix, "")) {
-            prefix = prefix + "/";
-        }
         try {
 
 
@@ -222,7 +218,7 @@ public class MinioService {
                                 .build()
                 );
                 count++;
-                logger.debug("Deleted object: {}", item.objectName());
+                logger.info("Deleted object: {}", item.objectName());
             }
 
 
@@ -240,7 +236,7 @@ public class MinioService {
         return  userSpacesInfoDto;
     }
 
-    public String checkBucketExist(String uuid) {
+    public String findBucketNameByUuid(String uuid) {
         String bucketPrefix = String.format("company-%s-", uuid);
 
         try {
