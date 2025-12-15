@@ -18,7 +18,6 @@ public class CompanyController {
     private final CompanyService companyService;
 
     @GetMapping("/company/uuid/{uuid}")
-
     public CompanyDto getCompanyByUuid(@PathVariable(value="uuid") String uuid) {
         CompanyDto company = companyService.getCompanyByUuid(uuid);
         return company;

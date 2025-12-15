@@ -21,11 +21,15 @@ import java.util.regex.Pattern;
 
 @Slf4j
 @Service
-@AllArgsConstructor
 public class CompanyService {
 
     private final IJdbcRepository jdbcRepository;
     private final IEntityRepository entityRepository;
+
+    public CompanyService(IJdbcRepository jdbcRepository, IEntityRepository entityRepository) {
+        this.jdbcRepository = jdbcRepository;
+        this.entityRepository = entityRepository;
+    }
 
     /**
      * Lấy thông tin spaces của company từ database
